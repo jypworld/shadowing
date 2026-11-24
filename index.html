@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14161c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>쉐도잉 룸</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Sans+SC:wght@400;500&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: sticky video on top, scrolling script below, thumb dock fixed at the bottom */
+:root {
+  --bg: #f5f6f8; --surface: #ffffff; --line: #e1e4ea; --fg: #1b1e26; --muted: #6a7080;
+  --accent: #e0861a; --accent-soft: #fdf0de; --accent-fg: #1b1206;
+  --rec: #d93a3a; --good: #2f8a5b;
+  --dock: #1b1e26; --dock-fg: #f3f4f7;
+  --f-body: "Noto Sans KR", "Noto Sans SC", system-ui, -apple-system, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #111318; --surface: #1a1d24; --line: #2b2f39; --fg: #eceef2; --muted: #969cab;
+    --accent: #f0a040; --accent-soft: #33260f; --accent-fg: #1b1206; --rec: #ff5a5a; --good: #4cc08a;
+    --dock: #0b0c10; --dock-fg: #eceef2; color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.6 var(--f-body); -webkit-text-size-adjust: 100%;
+  padding-top: env(safe-area-inset-top, 0px); }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+[hidden] { display: none !important; }
+.wrap { max-width: 860px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+header.top { display: flex; align-items: center; gap: 12px; padding-block: 14px; }
+.brand { font-weight: 700; font-size: 18px; letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px; }
+.brand i { width: 10px; height: 10px; border-radius: 50%; background: var(--rec); display: inline-block; box-shadow: 0 0 0 4px color-mix(in srgb, var(--rec) 20%, transparent); }
+header.top .sp { flex: 1; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 8px 14px; font-weight: 500; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); font-weight: 700; }
+.btn.ghost { background: transparent; }
+.btn.danger { color: var(--rec); }
+.btn:disabled { opacity: .5; cursor: default; }
+
+/* Home */
+h2 { font-size: 15px; font-weight: 700; margin: 24px 0 10px; color: var(--muted); letter-spacing: .02em; }
+.lessons { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.lesson { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; text-align: left; padding: 0; display: flex; flex-direction: column; }
+.lesson img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; background: var(--line); }
+.lesson .meta { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.lesson .t { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lesson .s { font-size: 13px; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; }
+.tag { font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+.empty { background: var(--surface); border: 1px dashed var(--line); border-radius: 14px; padding: 24px; color: var(--muted); }
+.empty b { color: var(--fg); }
+
+form.add { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 14px; }
+.field { display: grid; gap: 6px; min-width: 0; }
+.field label { font-size: 13px; font-weight: 700; }
+.field small { color: var(--muted); font-size: 12.5px; }
+input[type=text], input[type=url], textarea, select { width: 100%; border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 10px 12px; }
+textarea { min-height: 140px; resize: vertical; font-family: var(--f-mono); font-size: 13px; line-height: 1.5; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 520px) { .row2 { grid-template-columns: 1fr; } }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--bg); }
+.seg button { border: 0; background: transparent; padding: 8px 14px; }
+.seg button[aria-pressed=true] { background: var(--accent); color: var(--accent-fg); font-weight: 700; }
+details.help { font-size: 13.5px; color: var(--muted); background: var(--bg); border-radius: 10px; padding: 10px 12px; }
+details.help summary { cursor: pointer; color: var(--fg); font-weight: 500; }
+details.help ol { margin: 8px 0 0; padding-left: 20px; }
+.err { color: var(--rec); font-size: 13.5px; }
+.formbar { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+
+/* Study */
+.stage { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-bottom: 8px; }
+.player { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 0 0 12px 12px; overflow: hidden; max-width: 100%; }
+@media (min-width: 700px) { .player { border-radius: 12px; } .stage { padding-top: 8px; } }
+.player iframe, .player > div { width: 100%; height: 100%; display: block; }
+.studyhead { display: flex; align-items: center; gap: 8px; padding-top: 8px; min-width: 0; }
+.studyhead .t { font-weight: 700; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.opts { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding-block: 10px; border-bottom: 1px solid var(--line); }
+.opt { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.chips { display: inline-flex; gap: 4px; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 3px 10px; font-size: 13px; font-family: var(--f-mono); }
+.chip[aria-pressed=true] { background: var(--fg); color: var(--bg); border-color: var(--fg); font-weight: 600; }
+.opt.togs { flex-wrap: wrap; }
+.chip, .tog { white-space: nowrap; }
+.tog { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 3px 12px; font-size: 13px; }
+.tog[aria-pressed=true] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+
+.cues { list-style: none; margin: 0; padding: 8px 0 calc(110px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 2px; }
+.cue { display: grid; grid-template-columns: 52px 1fr 32px; gap: 8px; padding: 10px 8px; border-radius: 12px; align-items: start; cursor: pointer; }
+.cue:hover { background: color-mix(in srgb, var(--surface) 70%, transparent); }
+.cue .tm { font: 12px/1.9 var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.cue .tx { min-width: 0; font-size: 16px; line-height: 1.55; overflow-wrap: anywhere; }
+.cue[lang=zh] .tx { font-family: "Noto Sans SC", var(--f-body); font-size: 17px; }
+.cue .tr { color: var(--muted); font-size: 14px; margin-top: 2px; }
+.cue .star { border: 0; background: transparent; padding: 2px; color: var(--line); line-height: 0; }
+.cue .star[aria-pressed=true] { color: var(--accent); }
+.cue.active { background: var(--surface); box-shadow: inset 3px 0 0 var(--accent), 0 1px 0 var(--line); }
+.cue.active .tx { font-size: 19px; font-weight: 500; }
+.cue[lang=zh].active .tx { font-size: 21px; }
+.veil .cue .tx, .veil .cue .tr { filter: blur(6px); user-select: none; transition: filter .2s; }
+.veil .cue.peek .tx, .veil .cue.peek .tr { filter: none; }
+.cue .acts { grid-column: 2 / 4; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.cue .acts .btn { padding: 6px 12px; font-size: 13.5px; display: inline-flex; gap: 6px; align-items: center; }
+.cue .acts .btn.rec-on { background: var(--rec); border-color: var(--rec); color: #fff; }
+.has-rec { color: var(--good); font-size: 12px; font-weight: 700; }
+ruby rt { font-size: 0.55em; color: var(--accent); font-family: var(--f-body); }
+
+.dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: var(--dock); color: var(--dock-fg);
+  padding: 10px max(16px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.dock .in { max-width: 860px; margin: 0 auto; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
+.dock .side { display: flex; gap: 6px; }
+.dock .side.r { justify-content: flex-end; }
+.dbtn { background: transparent; border: 0; color: inherit; border-radius: 12px; padding: 8px 10px; display: grid; place-items: center; gap: 2px; font-size: 11px; min-width: 52px; }
+.dbtn svg { width: 24px; height: 24px; }
+.dbtn:disabled { opacity: .35; }
+.play { width: 60px; height: 60px; border-radius: 50%; border: 0; background: var(--accent); color: var(--accent-fg); display: grid; place-items: center; position: relative; }
+.play svg { width: 26px; height: 26px; }
+.play .ring { position: absolute; inset: -5px; width: 70px; height: 70px; transform: rotate(-90deg); pointer-events: none; }
+.play .ring circle { fill: none; stroke: var(--dock-fg); stroke-width: 3; stroke-dasharray: 207; stroke-dashoffset: 207; stroke-linecap: round; }
+.dbtn.rec-on { color: #fff; background: var(--rec); }
+.status { text-align: center; font-size: 12px; color: color-mix(in srgb, var(--dock-fg) 65%, transparent); margin-bottom: 6px; min-height: 18px; font-variant-numeric: tabular-nums; }
+.toast { position: fixed; left: 50%; bottom: calc(120px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 8px 14px; border-radius: 10px; font-size: 14px; z-index: 20; max-width: calc(100% - 32px); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<main id="home" class="wrap">
+  <header class="top">
+    <div class="brand"><i></i>쉐도잉 룸</div>
+    <span class="sp"></span>
+    <a class="btn" href="https://claude.ai/artifact/WjCGRADUcGSu4UvX2jtLuW" target="_blank" rel="noopener" style="text-decoration:none;font-size:14px">AI 선생님</a>
+    <button class="btn primary" id="newBtn" type="button">+ 새 영상</button>
+  </header>
+
+  <form class="add" id="addForm" hidden>
+    <div class="field">
+      <label for="fUrl">유튜브 링크</label>
+      <input type="url" id="fUrl" placeholder="https://www.youtube.com/watch?v=..." required>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="fTitle">제목</label>
+        <input type="text" id="fTitle" placeholder="예: 겨울왕국 엘사 대사">
+      </div>
+      <div class="field">
+        <label>언어</label>
+        <div class="seg" id="fLang">
+          <button type="button" data-v="en" aria-pressed="true">영어</button>
+          <button type="button" data-v="zh" aria-pressed="false">중국어</button>
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <label for="fSubs">자막 (원문)</label>
+      <textarea id="fSubs" placeholder="0:01&#10;Let it go, let it go&#10;0:05&#10;Can't hold it back anymore&#10;&#10;유튜브 스크립트를 복사해 붙여넣거나 .srt / .vtt 파일 내용을 넣으세요"></textarea>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <label class="btn ghost" style="font-size:13px">파일 불러오기<input type="file" id="fSubsFile" accept=".srt,.vtt,.txt" hidden></label>
+        <small>시간이 붙어 있는 자막이면 어떤 형식이든 돼요</small>
+      </div>
+    </div>
+    <details class="field">
+      <summary style="cursor:pointer;font-size:13px;font-weight:700">한국어 번역 자막 추가 (선택)</summary>
+      <textarea id="fTrans" style="margin-top:8px" placeholder="같은 형식으로 한국어 자막을 넣으면 원문 아래에 함께 보여요"></textarea>
+    </details>
+    <label class="opt" style="color:var(--fg)"><input type="checkbox" id="fMerge" checked> 짧게 끊긴 자막을 문장 단위로 합치기</label>
+    <details class="help">
+      <summary>유튜브에서 자막 복사하는 법</summary>
+      <ol>
+        <li>PC에서 유튜브 영상을 열고, 영상 아래 설명란의 <b>더보기</b> → <b>스크립트 표시</b>를 눌러요.</li>
+        <li>오른쪽에 뜬 스크립트 상단 <b>⋮</b> 에서 언어를 고를 수 있어요 (영어 / 중국어 / 한국어).</li>
+        <li>스크립트 글자를 드래그로 전부 선택해서 복사(⌘C)한 뒤 위 칸에 붙여넣어요.</li>
+        <li>한국어 자막도 있으면 언어를 바꿔 한 번 더 복사해 번역 칸에 넣어요.</li>
+      </ol>
+    </details>
+    <div class="err" id="fErr" hidden></div>
+    <div class="formbar">
+      <button type="button" class="btn ghost" id="cancelAdd">취소</button>
+      <button type="submit" class="btn primary" id="saveAdd">저장하고 시작</button>
+    </div>
+  </form>
+
+  <h2>내 영상</h2>
+  <div class="lessons" id="lessonList"></div>
+  <div class="empty" id="emptyState">
+    <b>아직 추가한 영상이 없어요.</b><br>
+    오른쪽 위 <b>+ 새 영상</b>을 눌러 유튜브 링크와 자막을 넣으면, 대사를 한 줄씩 반복해 듣고 따라 말하고 녹음해서 비교할 수 있어요.
+  </div>
+
+  <h2>다른 기기로 옮기기</h2>
+  <div class="empty" style="display:grid;gap:10px">
+    <span>영상 목록은 이 기기의 브라우저에만 저장돼요. 휴대폰으로 옮기려면 영상 카드의 <b>공유 링크</b>를 복사해 카톡 등으로 보내고 휴대폰에서 열면 돼요.</span>
+  </div>
+  <div style="height:40px"></div>
+</main>
+
+<!-- STUDY -->
+<main id="study" hidden>
+  <div class="stage">
+    <div class="wrap" style="padding-left:0;padding-right:0;max-width:860px">
+      <div class="player"><div id="yt"></div></div>
+    </div>
+    <div class="wrap">
+      <div class="studyhead">
+        <button class="btn ghost" id="backBtn" type="button" aria-label="목록으로">←</button>
+        <div class="t" id="sTitle"></div>
+        <button class="btn ghost" id="shareBtn" type="button" style="font-size:13px">공유 링크</button>
+        <button class="btn ghost" id="editBtn" type="button" style="font-size:13px">수정</button>
+      </div>
+    </div>
+  </div>
+  <div class="wrap">
+    <div class="opts">
+      <span class="opt">반복 <span class="chips" id="oRepeat"></span></span>
+      <span class="opt">속도 <span class="chips" id="oSpeed"></span></span>
+      <span class="opt">따라말하기 쉬는 시간 <span class="chips" id="oGap"></span></span>
+      <span class="opt togs">
+        <button class="tog" id="tAuto" type="button">다음 줄 자동</button>
+        <button class="tog" id="tAutoRec" type="button">쉬는 시간 자동녹음</button>
+        <button class="tog" id="tVeil" type="button">자막 가리기</button>
+        <button class="tog" id="tTrans" type="button">번역</button>
+        <button class="tog" id="tPy" type="button">병음</button>
+        <button class="tog" id="tFav" type="button">즐겨찾기만</button>
+      </span>
+    </div>
+    <ol class="cues" id="cueList"></ol>
+  </div>
+  <div class="dock">
+    <div class="status" id="status">대사를 누르거나 가운데 버튼을 눌러 시작하세요</div>
+    <div class="in">
+      <div class="side">
+        <button class="dbtn" id="dPrev" type="button"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg>이전</button>
+        <button class="dbtn" id="dSlow" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12a8 8 0 1 0 3-6.2"/><path d="M4 4v4h4"/><path d="M12 8v4l3 2"/></svg>느리게</button>
+      </div>
+      <button class="play" id="dPlay" type="button" aria-label="재생">
+        <svg class="ring" viewBox="0 0 70 70"><circle cx="35" cy="35" r="33" id="ring"/></svg>
+        <svg id="icoPlay" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg>
+        <svg id="icoPause" viewBox="0 0 24 24" fill="currentColor" hidden><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>
+      </button>
+      <div class="side r">
+        <button class="dbtn" id="dRec" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span id="dRecL">녹음</span></button>
+        <button class="dbtn" id="dNext" type="button"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg>다음</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const KEY = "shadow.lessons.v1", SKEY = "shadow.settings.v1";
+const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
+const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+
+let lessons = load(KEY, []);
+const S = Object.assign({ repeat: 3, speed: 1, gap: 1, auto: true, autoRec: false, veil: false, trans: true, py: true, fav: false }, load(SKEY, {}));
+const saveS = () => save(SKEY, S);
+const saveL = () => save(KEY, lessons);
+
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => t.hidden = true, 2200); }
+const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fmt = s => { s = Math.max(0, Math.floor(s)); const m = Math.floor(s / 60), x = s % 60; return m + ":" + String(x).padStart(2, "0"); };
+
+/* ---------- Subtitle parsing ---------- */
+function toSec(str) { return str.replace(",", ".").split(":").map(Number).reduce((a, b) => a * 60 + b, 0); }
+function clean(t) { return t.replace(/<[^>]+>/g, "").replace(/\{\\[^}]*\}/g, "").replace(/&nbsp;/g, " ").replace(/\[(음악|박수|Music|Applause|音乐)\]/gi, "").replace(/\s+/g, " ").trim(); }
+function parseSubs(raw) {
+  const text = (raw || "").replace(/\r/g, "").replace(/^﻿/, "");
+  const arrow = /((?:\d+:)?\d{1,2}:\d{2}[.,]\d{1,3})\s*-->\s*((?:\d+:)?\d{1,2}:\d{2}[.,]\d{1,3})/;
+  let cues = [];
+  if (arrow.test(text)) {
+    for (const block of text.split(/\n\s*\n/)) {
+      const lines = block.split("\n"); const i = lines.findIndex(l => arrow.test(l));
+      if (i < 0) continue; const m = lines[i].match(arrow);
+      const t = clean(lines.slice(i + 1).join(" ")); if (t) cues.push({ s: toSec(m[1]), e: toSec(m[2]), t });
+    }
+  } else {
+    const tsLine = /^\s*\[?((?:\d+:)?\d{1,2}:\d{2})(?:[.,]\d+)?\]?\s*(.*)$/;
+    const dur = /^(\d+\s*(시간|분|초|hours?|minutes?|seconds?)\s*,?\s*)+$/i;
+    let cur = null;
+    for (const line of text.split("\n")) {
+      const l = line.trim(); if (!l || dur.test(l)) continue;
+      const m = l.match(tsLine);
+      if (m) { cur = { s: toSec(m[1]), e: null, t: m[2] || "" }; cues.push(cur); }
+      else if (cur) cur.t += (cur.t ? " " : "") + l;
+    }
+    cues.forEach(c => c.t = clean(c.t));
+    cues = cues.filter(c => c.t);
+  }
+  cues.sort((a, b) => a.s - b.s);
+  // drop rolling duplicates (YouTube auto-caption VTT)
+  const out = [];
+  for (const c of cues) { const p = out[out.length - 1]; if (p && p.t === c.t) { p.e = Math.max(p.e ?? c.e, c.e ?? 0); continue; } out.push(c); }
+  out.forEach((c, i) => { const n = out[i + 1]; if (c.e == null || (n && c.e > n.s && n.s > c.s)) c.e = n ? n.s : c.s + 4; if (c.e - c.s > 15) c.e = c.s + 15; if (c.e <= c.s) c.e = c.s + 1.5; });
+  return out;
+}
+function mergeShort(cues) {
+  const out = []; const endP = /[.!?。！？…"”」]$/;
+  for (const c of cues) {
+    const p = out[out.length - 1];
+    if (p && !endP.test(p.t) && (p.e - p.s) < 2.6 && (c.e - p.s) < 8 && c.s - p.e < 1) { p.t += (/[一-鿿]$/.test(p.t) ? "" : " ") + c.t; p.e = c.e; }
+    else out.push({ ...c });
+  }
+  return out;
+}
+function attachTrans(cues, tr) {
+  if (!tr.length) return cues;
+  return cues.map(c => { const hits = tr.filter(x => x.s >= c.s - 0.6 && x.s < c.e - 0.2); return { ...c, tr: hits.map(x => x.t).join(" ") || undefined }; });
+}
+function videoIdOf(url) {
+  const m = String(url).match(/(?:youtu\.be\/|v=|\/shorts\/|\/embed\/|\/live\/)([\w-]{11})/); if (m) return m[1];
+  return /^[\w-]{11}$/.test(url.trim()) ? url.trim() : null;
+}
+
+/* ---------- Home ---------- */
+let editingId = null, formLang = "en";
+function renderHome() {
+  const list = $("#lessonList"); list.innerHTML = "";
+  $("#emptyState").hidden = lessons.length > 0;
+  [...lessons].sort((a, b) => (b.last || b.created) - (a.last || a.created)).forEach(l => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "lesson";
+    const done = Object.keys(l.recs || {}).length;
+    b.innerHTML = `<img alt="" loading="lazy" src="https://i.ytimg.com/vi/${l.vid}/mqdefault.jpg"><div class="meta"><div class="t">${esc(l.title)}</div><div class="s"><span class="tag">${l.lang === "zh" ? "中文" : "EN"}</span><span>${l.cues.length}문장</span>${(l.fav || []).length ? `<span>★ ${l.fav.length}</span>` : ""}${l.pos ? `<span>${l.pos + 1}번째 줄까지</span>` : ""}</div></div>`;
+    b.onclick = () => openLesson(l.id);
+    list.appendChild(b);
+  });
+}
+function setFormLang(v) { formLang = v; document.querySelectorAll("#fLang button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === v)); }
+document.querySelectorAll("#fLang button").forEach(b => b.onclick = () => setFormLang(b.dataset.v));
+function openForm(l) {
+  editingId = l ? l.id : null;
+  $("#fUrl").value = l ? "https://youtu.be/" + l.vid : ""; $("#fTitle").value = l ? l.title : "";
+  $("#fSubs").value = l ? (l.rawSubs || "") : ""; $("#fTrans").value = l ? (l.rawTrans || "") : "";
+  setFormLang(l ? l.lang : "en"); $("#fErr").hidden = true; $("#addForm").hidden = false;
+  showView("home"); $("#fUrl").focus();
+}
+$("#newBtn").onclick = () => openForm(null);
+$("#cancelAdd").onclick = () => { $("#addForm").hidden = true; };
+$("#fSubsFile").onchange = e => { const f = e.target.files[0]; if (!f) return; f.text().then(t => { $("#fSubs").value = t; if (!$("#fTitle").value) $("#fTitle").value = f.name.replace(/\.[^.]+$/, ""); }); };
+$("#addForm").onsubmit = e => {
+  e.preventDefault();
+  const err = m => { $("#fErr").textContent = m; $("#fErr").hidden = false; };
+  const vid = videoIdOf($("#fUrl").value); if (!vid) return err("유튜브 링크를 확인해주세요. 예: https://www.youtube.com/watch?v=xxxxxxxxxxx");
+  const raw = $("#fSubs").value, rawT = $("#fTrans").value;
+  let cues = parseSubs(raw); if (!cues.length) return err("자막에서 시간 정보를 찾지 못했어요. '0:01' 같은 시간이 줄마다 있어야 해요.");
+  if ($("#fMerge").checked) cues = mergeShort(cues);
+  cues = attachTrans(cues, parseSubs(rawT));
+  const prev = editingId && lessons.find(x => x.id === editingId);
+  const l = { id: prev ? prev.id : Date.now().toString(36), vid, title: $("#fTitle").value.trim() || "제목 없는 영상", lang: formLang, cues, rawSubs: raw, rawTrans: rawT, fav: [], created: prev ? prev.created : Date.now(), pos: 0 };
+  lessons = lessons.filter(x => x.id !== l.id); lessons.push(l); saveL();
+  $("#addForm").hidden = true; openLesson(l.id);
+};
+
+/* ---------- Share link (compressed into #hash) ---------- */
+const b64u = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const unb64u = s => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
+async function pack(obj) {
+  const data = new TextEncoder().encode(JSON.stringify(obj));
+  if (window.CompressionStream) { const r = new Response(new Blob([data]).stream().pipeThrough(new CompressionStream("deflate-raw"))); return "z" + b64u(await r.arrayBuffer()); }
+  return "j" + b64u(data);
+}
+async function unpack(s) {
+  const bytes = unb64u(s.slice(1));
+  const txt = s[0] === "z" ? await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).text() : new TextDecoder().decode(bytes);
+  return JSON.parse(txt);
+}
+async function shareLesson(l) {
+  const code = await pack({ vid: l.vid, title: l.title, lang: l.lang, cues: l.cues.map(c => [Math.round(c.s * 100) / 100, Math.round(c.e * 100) / 100, c.t, c.tr || ""]) });
+  const url = location.origin + location.pathname + "#share" + code;
+  try { await navigator.clipboard.writeText(url); toast("공유 링크를 복사했어요. 휴대폰으로 보내서 열어보세요"); }
+  catch { prompt("아래 링크를 복사하세요", url); }
+}
+async function importFromHash() {
+  if (!location.hash.startsWith("#share")) return false;
+  try {
+    const d = await unpack(location.hash.slice(6));
+    const exist = lessons.find(x => x.vid === d.vid && x.title === d.title);
+    let id = exist?.id;
+    if (!exist) { id = Date.now().toString(36); lessons.push({ id, vid: d.vid, title: d.title, lang: d.lang, cues: d.cues.map(([s, e, t, tr]) => ({ s, e, t, tr: tr || undefined })), fav: [], created: Date.now(), pos: 0 }); saveL(); toast("영상을 내 목록에 추가했어요"); }
+    history.replaceState(null, "", location.pathname);
+    openLesson(id); return true;
+  } catch (e) { toast("공유 링크를 읽지 못했어요. 링크가 잘리지 않았는지 확인해주세요"); history.replaceState(null, "", location.pathname); return false; }
+}
+
+/* ---------- Study ---------- */
+let L = null, player = null, ytReady = false, pendingVid = null;
+let active = 0, mode = "idle", repLeft = 0, startedAt = 0, gapTimer = null, compareAfter = false;
+const recs = new Map(); // `${lessonId}:${idx}` -> objectURL (this session only)
+
+window.onYouTubeIframeAPIReady = () => { ytReady = true; if (pendingVid) makePlayer(pendingVid); };
+function makePlayer(vid) {
+  if (player) { player.cueVideoById(vid); return; }
+  player = new YT.Player("yt", { videoId: vid, playerVars: { playsinline: 1, rel: 0, modestbranding: 1, iv_load_policy: 3, cc_load_policy: 0 },
+    events: { onReady: () => applySpeed(), onStateChange: e => { if (e.data === 1 && mode === "idle") { mode = "free"; syncUI(); } if (e.data === 2 && mode === "free") { mode = "idle"; syncUI(); } } } });
+}
+function showView(v) { $("#home").hidden = v !== "home"; $("#study").hidden = v !== "study"; if (v === "home") { stopAll(); renderHome(); } window.scrollTo(0, 0); }
+
+function openLesson(id) {
+  L = lessons.find(x => x.id === id); if (!L) return;
+  L.last = Date.now(); saveL();
+  active = Math.min(L.pos || 0, L.cues.length - 1); mode = "idle";
+  $("#sTitle").textContent = L.title;
+  $("#tPy").hidden = L.lang !== "zh";
+  $("#tTrans").hidden = !L.cues.some(c => c.tr);
+  showView("study");
+  if (ytReady) makePlayer(L.vid); else pendingVid = L.vid;
+  if (L.lang === "zh" && S.py) loadPinyin().then(renderCues);
+  renderOpts(); renderCues(); syncUI();
+}
+$("#backBtn").onclick = () => showView("home");
+$("#editBtn").onclick = () => openForm(L);
+$("#shareBtn").onclick = () => shareLesson(L);
+
+let pyLib = null;
+function loadPinyin() {
+  if (pyLib) return pyLib;
+  pyLib = new Promise(res => { const s = document.createElement("script"); s.src = "https://cdn.jsdelivr.net/npm/pinyin-pro@3.26.0/dist/index.js"; s.onload = () => res(window.pinyinPro); s.onerror = () => res(null); document.head.appendChild(s); });
+  return pyLib;
+}
+function textHTML(t) {
+  if (L.lang === "zh" && S.py && window.pinyinPro) {
+    try { return window.pinyinPro.html(t, { toneType: "symbol" }); } catch {}
+  }
+  return esc(t);
+}
+
+function chips(el, values, labels, key, after) {
+  el.innerHTML = "";
+  values.forEach((v, i) => { const b = document.createElement("button"); b.type = "button"; b.className = "chip"; b.textContent = labels[i]; b.setAttribute("aria-pressed", S[key] === v); b.onclick = () => { S[key] = v; saveS(); renderOpts(); after && after(); }; el.appendChild(b); });
+}
+function tog(id, key, after) { const b = $(id); b.setAttribute("aria-pressed", !!S[key]); b.onclick = () => { S[key] = !S[key]; saveS(); renderOpts(); after && after(); }; }
+function renderOpts() {
+  chips($("#oRepeat"), [1, 3, 5, 0], ["1", "3", "5", "∞"], "repeat");
+  chips($("#oSpeed"), [0.5, 0.75, 1], ["0.5", "0.75", "1.0"], "speed", applySpeed);
+  chips($("#oGap"), [0, 1, 1.5], ["없음", "1배", "1.5배"], "gap");
+  tog("#tAuto", "auto"); tog("#tAutoRec", "autoRec");
+  tog("#tVeil", "veil", () => $("#cueList").classList.toggle("veil", S.veil));
+  tog("#tTrans", "trans", renderCues); tog("#tFav", "fav", renderCues);
+  tog("#tPy", "py", () => { if (S.py) loadPinyin().then(renderCues); else renderCues(); });
+  $("#cueList").classList.toggle("veil", S.veil);
+}
+function applySpeed() { try { player && player.setPlaybackRate && player.setPlaybackRate(S.speed); } catch {} }
+
+const STAR = `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>`;
+function visibleIdx() { return L.cues.map((_, i) => i).filter(i => !S.fav || (L.fav || []).includes(i)); }
+function renderCues() {
+  if (!L) return;
+  const ol = $("#cueList"); ol.innerHTML = "";
+  const vis = visibleIdx();
+  if (!vis.length) { ol.innerHTML = `<li class="empty">즐겨찾기한 문장이 없어요. 문장 오른쪽 별을 눌러 추가하세요.</li>`; return; }
+  for (const i of vis) {
+    const c = L.cues[i]; const li = document.createElement("li");
+    li.className = "cue" + (i === active ? " active" : ""); li.dataset.i = i; li.lang = L.lang;
+    const fav = (L.fav || []).includes(i); const hasRec = recs.has(L.id + ":" + i);
+    li.innerHTML = `<div class="tm">${fmt(c.s)}</div><div><div class="tx">${textHTML(c.t)}</div>${S.trans && c.tr ? `<div class="tr">${esc(c.tr)}</div>` : ""}</div><button class="star" type="button" aria-label="즐겨찾기" aria-pressed="${fav}">${STAR}</button>` +
+      (i === active ? `<div class="acts"><button class="btn" data-a="once" type="button">한 번 듣기</button><button class="btn ${recording ? "rec-on" : ""}" data-a="rec" type="button">${recording ? "녹음 멈추기" : "따라 말하고 녹음"}</button><button class="btn" data-a="mine" type="button" ${hasRec ? "" : "disabled"}>내 목소리</button><button class="btn" data-a="cmp" type="button" ${hasRec ? "" : "disabled"}>원본 → 내 목소리</button>${hasRec ? `<span class="has-rec" style="align-self:center">녹음 있음</span>` : ""}</div>` : "");
+    ol.appendChild(li);
+  }
+}
+$("#cueList").addEventListener("click", e => {
+  const li = e.target.closest(".cue"); if (!li) return; const i = +li.dataset.i;
+  const star = e.target.closest(".star");
+  if (star) { L.fav = L.fav || []; const k = L.fav.indexOf(i); k < 0 ? L.fav.push(i) : L.fav.splice(k, 1); saveL(); renderCues(); return; }
+  const a = e.target.closest("[data-a]")?.dataset.a;
+  if (a === "once") return playCue(i, { reps: 1, noAuto: true });
+  if (a === "rec") return toggleRec(i);
+  if (a === "mine") return playMine(i);
+  if (a === "cmp") { compareAfter = true; return playCue(i, { reps: 1, noAuto: true }); }
+  if (S.veil && e.target.closest(".tx, .tr") && i === active && !li.classList.contains("peek")) { li.classList.add("peek"); return; }
+  playCue(i);
+});
+
+let noAuto = false;
+function playCue(i, o = {}) {
+  if (!player || !player.seekTo) { toast("영상이 아직 불러와지는 중이에요"); return; }
+  clearTimeout(gapTimer); setRing(0);
+  if (active !== i) { active = i; L.pos = i; saveL(); renderCues(); scrollToActive(); }
+  if (!o.again) { repLeft = o.reps ?? (S.repeat || Infinity); noAuto = !!o.noAuto; }
+  const c = L.cues[i];
+  applySpeed(); player.seekTo(c.s, true); player.playVideo();
+  mode = "cue"; startedAt = performance.now(); syncUI();
+}
+function stopAll() {
+  clearTimeout(gapTimer); setRing(0); compareAfter = false;
+  if (mode !== "idle") { try { player && player.pauseVideo(); } catch {} }
+  mode = "idle"; if (recording && !manualRec) stopRec(); syncUI();
+}
+function cueDone() {
+  player.pauseVideo(); repLeft--;
+  const c = L.cues[active];
+  if (compareAfter) { compareAfter = false; mode = "idle"; syncUI(); setTimeout(() => playMine(active), 250); return; }
+  const gapMs = S.gap * ((c.e - c.s) / S.speed) * 1000;
+  const vis = visibleIdx(); const nextI = vis[vis.indexOf(active) + 1];
+  let next = null;
+  if (repLeft > 0) next = () => playCue(active, { again: true });
+  else if (S.auto && !noAuto && nextI != null) next = () => playCue(nextI);
+  if (!next) { mode = "idle"; syncUI(); if (S.autoRec && gapMs > 0) gapRecord(gapMs, () => {}); return; }
+  if (gapMs <= 0) return next();
+  mode = "gap"; syncUI();
+  gapRecord(gapMs, next);
+}
+function gapRecord(ms, then) {
+  const t0 = performance.now(); const doRec = S.autoRec; const idx = active;
+  if (doRec) startRec(idx, false);
+  const step = () => {
+    const p = (performance.now() - t0) / ms;
+    if (mode !== "gap" && mode !== "idle") return;
+    if (p >= 1) { setRing(0); if (doRec) stopRec(); if (mode === "gap") then(); return; }
+    setRing(p); $("#status").textContent = (doRec ? "녹음 중 · " : "") + "따라 말해보세요 · " + Math.ceil((ms - (performance.now() - t0)) / 1000) + "초";
+    gapTimer = setTimeout(step, 80);
+  };
+  step();
+}
+function setRing(p) { $("#ring").style.strokeDashoffset = 207 * (1 - p); }
+
+setInterval(() => {
+  if (!player || !player.getCurrentTime || !L) return;
+  const t = player.getCurrentTime();
+  if (mode === "cue") {
+    const c = L.cues[active];
+    if (performance.now() - startedAt > 300 && t >= c.e - 0.05 && t >= c.s) cueDone();
+  } else if (mode === "free") {
+    let i = -1; for (let k = 0; k < L.cues.length; k++) { if (L.cues[k].s <= t + 0.1) i = k; else break; }
+    if (i >= 0 && i !== active) { active = i; renderCues(); scrollToActive(); }
+  }
+}, 50);
+
+function scrollToActive() {
+  const el = document.querySelector(".cue.active"); if (!el) return;
+  const stage = $(".stage").getBoundingClientRect().bottom; const r = el.getBoundingClientRect();
+  const dock = innerHeight - $(".dock").getBoundingClientRect().top;
+  if (r.top < stage + 8 || r.bottom > innerHeight - dock - 8) window.scrollBy({ top: r.top - stage - 60, behavior: "smooth" });
+}
+function syncUI() {
+  const playing = mode === "cue" || mode === "gap" || mode === "free";
+  $("#icoPlay").toggleAttribute("hidden", playing); $("#icoPause").toggleAttribute("hidden", !playing);
+  $("#dPlay").setAttribute("aria-label", playing ? "멈춤" : "재생");
+  if (!L) return;
+  const n = L.cues.length;
+  const st = { idle: `${active + 1} / ${n}번째 문장`, cue: `${active + 1} / ${n} · ${repLeft === Infinity ? "무한 반복" : "남은 반복 " + Math.max(0, repLeft - 1) + "회"} · ${S.speed}배속`, free: "자유 재생 중", gap: $("#status").textContent };
+  if (mode !== "gap") $("#status").textContent = recording ? "녹음 중... 다시 누르면 멈춰요" : st[mode];
+  $("#dRec").classList.toggle("rec-on", recording); $("#dRecL").textContent = recording ? "멈춤" : "녹음";
+}
+$("#dPlay").onclick = () => { if (mode === "idle") playCue(active); else stopAll(); };
+$("#dPrev").onclick = () => { const v = visibleIdx(); const k = v.indexOf(active); playCue(v[Math.max(0, k - 1)] ?? active); };
+$("#dNext").onclick = () => { const v = visibleIdx(); const k = v.indexOf(active); playCue(v[Math.min(v.length - 1, k + 1)] ?? active); };
+$("#dSlow").onclick = () => { const prev = S.speed; S.speed = 0.5; applySpeed(); playCue(active, { reps: 1, noAuto: true }); const restore = setInterval(() => { if (mode !== "cue") { S.speed = prev; applySpeed(); clearInterval(restore); } }, 200); };
+$("#dRec").onclick = () => toggleRec(active);
+
+/* ---------- Recording ---------- */
+let stream = null, recorder = null, recording = false, manualRec = false, chunks = [];
+async function startRec(i, manual = true) {
+  try {
+    if (!stream) stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+  } catch { toast("마이크를 쓸 수 없어요. 브라우저 주소창의 권한 설정에서 마이크를 허용해주세요"); return; }
+  if (recording) return;
+  const mime = ["audio/webm;codecs=opus", "audio/mp4", "audio/webm"].find(m => window.MediaRecorder && MediaRecorder.isTypeSupported(m));
+  recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined); chunks = [];
+  const key = L.id + ":" + i;
+  recorder.ondataavailable = e => e.data.size && chunks.push(e.data);
+  recorder.onstop = () => { const blob = new Blob(chunks, { type: recorder.mimeType }); if (blob.size > 800) { const old = recs.get(key); if (old) URL.revokeObjectURL(old); recs.set(key, URL.createObjectURL(blob)); } recording = false; manualRec = false; renderCues(); syncUI(); };
+  recorder.start(); recording = true; manualRec = manual;
+  if (manual && mode !== "idle") { clearTimeout(gapTimer); try { player.pauseVideo(); } catch {} mode = "idle"; setRing(0); }
+  renderCues(); syncUI();
+}
+function stopRec() { if (recorder && recording) recorder.stop(); }
+function toggleRec(i) { recording ? stopRec() : startRec(i, true); }
+function playMine(i) {
+  const u = recs.get(L.id + ":" + i); if (!u) { toast("이 문장은 아직 녹음이 없어요"); return; }
+  stopAll(); const a = new Audio(u); a.play().catch(() => toast("재생하지 못했어요"));
+  $("#status").textContent = "내 목소리 재생 중"; a.onended = () => syncUI();
+}
+
+/* keyboard (desktop) */
+addEventListener("keydown", e => {
+  if ($("#study").hidden || e.target.matches("input, textarea")) return;
+  if (e.code === "Space") { e.preventDefault(); $("#dPlay").click(); }
+  else if (e.key === "ArrowLeft") $("#dPrev").click();
+  else if (e.key === "ArrowRight") $("#dNext").click();
+  else if (e.key === "r" || e.key === "R") $("#dRec").click();
+  else if (e.key === "m" || e.key === "M") playMine(active);
+});
+
+renderHome();
+importFromHash();
+</script>
+</body>
+</html>
